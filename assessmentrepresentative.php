@@ -3,6 +3,18 @@
 require_once 'assessmentrepresentative.civix.php';
 
 /**
+ * Implements hook civicrm_post()
+ * Process contact segment
+ *
+ * @link http://wiki.civicrm.org/confluence/display/CRMDOC/hook_civicrm_post
+ */
+function assessmentrepresentative_civicrm_post($op, $objectName, $objectId, &$objectRef) {
+  if ($objectName == 'ContactSegment') {
+    CRM_Assessmentrepresentative_ContactSegment::post($op, $objectName, $objectId, $objectRef);
+  }
+}
+
+/**
  * Implements hook_civicrm_config().
  *
  * @link http://wiki.civicrm.org/confluence/display/CRMDOC/hook_civicrm_config
@@ -28,6 +40,10 @@ function assessmentrepresentative_civicrm_xmlMenu(&$files) {
  * @link http://wiki.civicrm.org/confluence/display/CRMDOC/hook_civicrm_install
  */
 function assessmentrepresentative_civicrm_install() {
+  if (_assessmentrepresentative_checkContactSegmentInstalled() == FALSE) {
+    throw new Exception(ts('Could not install extension nl.pum.assessmentrepresentative,
+      required extension org.civicoop.contactsegment not installed or disabled'));
+  }
   _assessmentrepresentative_civix_civicrm_install();
 }
 
@@ -46,6 +62,10 @@ function assessmentrepresentative_civicrm_uninstall() {
  * @link http://wiki.civicrm.org/confluence/display/CRMDOC/hook_civicrm_enable
  */
 function assessmentrepresentative_civicrm_enable() {
+  if (_assessmentrepresentative_checkContactSegmentInstalled() == FALSE) {
+    throw new Exception(ts('Could not enable extension nl.pum.assessmentrepresentative,
+      required extension org.civicoop.contactsegment not installed or disabled'));
+  }
   _assessmentrepresentative_civix_civicrm_enable();
 }
 
@@ -123,33 +143,21 @@ _assessmentrepresentative_civix_civicrm_angularModules($angularModules);
 function assessmentrepresentative_civicrm_alterSettingsFolders(&$metaDataFolders = NULL) {
   _assessmentrepresentative_civix_civicrm_alterSettingsFolders($metaDataFolders);
 }
-
 /**
- * Functions below this ship commented out. Uncomment as required.
- *
-
-/**
- * Implements hook_civicrm_preProcess().
- *
- * @link http://wiki.civicrm.org/confluence/display/CRMDOC/hook_civicrm_preProcess
- *
-function assessmentrepresentative_civicrm_preProcess($formName, &$form) {
-
-} // */
-
-/**
- * Implements hook_civicrm_navigationMenu().
- *
- * @link http://wiki.civicrm.org/confluence/display/CRMDOC/hook_civicrm_navigationMenu
- *
-function assessmentrepresentative_civicrm_navigationMenu(&$menu) {
-  _assessmentrepresentative_civix_insert_navigation_menu($menu, NULL, array(
-    'label' => ts('The Page', array('domain' => 'nl.pum.assessmentrepresentative')),
-    'name' => 'the_page',
-    'url' => 'civicrm/the-page',
-    'permission' => 'access CiviReport,access CiviContribute',
-    'operator' => 'OR',
-    'separator' => 0,
-  ));
-  _assessmentrepresentative_civix_navigationMenu($menu);
-} // */
+ * Function to check if extension org.civicoop.contactsegment is installed
+ */
+function _assessmentrepresentative_checkContactSegmentInstalled() {
+  $foundExtension = FALSE;
+  try {
+    $installedExtensions = civicrm_api3('Extension', 'Get', array());
+    foreach ($installedExtensions['values'] as $extension) {
+      if ($extension['key'] = 'org.civicoop.contactsegment' && $extension['status'] == 'installed') {
+        $foundExtension = TRUE;
+      }
+    }
+  } catch (CiviCRM_API3_Exception $ex) {
+    throw new Exception(ts('Could not get any extensions in mainsector.php function _checkContactSegmentInstalled,
+      error from API Extension Get: '.$ex->getMessage()));
+  }
+  return $foundExtension;
+}
