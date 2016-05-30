@@ -46,7 +46,7 @@ class CRM_Assessmentrepresentative_ContactSegment {
       foreach ($foundCases['values'] as $case) {
         if (self::canProcessCase($case)) {
           CRM_Threepeas_BAO_PumCaseRelation::createCaseRelation($case['id'], $contactId, $sectorCoordinatorId,
-            $case['start_date'], "sector_coordinator");
+            $case['start_date'], "sector_coordinator", true);
         }
       }
     } catch (CiviCRM_API3_Exception $ex) {}
@@ -63,18 +63,18 @@ class CRM_Assessmentrepresentative_ContactSegment {
       return FALSE;
     }
     $statusToBeIgnored = array('Cancelled','Completed', 'Closed', 'Declined', 'Error', 'Rejected', 'Resolved');
+    $validCaseTypes = array("Projectintake");
     try {
       $optionGroupId = civicrm_api3('OptionGroup', 'Getvalue', array('name' => 'case_status', 'return' => 'id'));
-      try {
-        $caseStatusName = civicrm_api3('OptionValue', 'Getvalue',
-          array('option_group_id' => $optionGroupId, 'value' => $case['status_id'], 'return' => 'name'));
-        if (in_array($caseStatusName, $statusToBeIgnored)) {
-          return FALSE;
-        } else {
-          return TRUE;
-        }
-      } catch (CiviCRM_API3_Exception $ex) {
+      $caseStatusName = civicrm_api3('OptionValue', 'Getvalue', array('option_group_id' => $optionGroupId, 'value' => $case['status_id'], 'return' => 'name'));
+      if (in_array($caseStatusName, $statusToBeIgnored)) {
         return FALSE;
+      }
+
+      $caseTypeOptionGroupId = civicrm_api3('OptionGroup', 'Getvalue', array('name' => 'case_type', 'return' => 'id'));
+      $caseTypeName = civicrm_api3('OptionValue', 'Getvalue', array('option_group_id' => $caseTypeOptionGroupId, 'value' => $case['case_type_id'], 'return' => 'name'));
+      if (in_array($caseTypeName, $validCaseTypes)) {
+        return true;
       }
     } catch (CiviCRM_API3_Exception $ex) {
       return FALSE;
